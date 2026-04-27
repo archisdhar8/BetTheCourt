@@ -1,0 +1,1 @@
+{"version":3,"file":"aiExplanation.d.ts","sourceRoot":"","sources":["../../src/matchmaking/aiExplanation.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,YAAY,CAAC;AAOjD,wBAAsB,mBAAmB,CAAC,MAAM,EAAE,MAAM,GAAG,OAAO,CAAC,MAAM,CAAC,CAgCzE;AAED,wBAAgB,uBAAuB,CAAC,OAAO,EAAE,OAAO,GAAG,SAAS,GAAG,CAAC,CAAC,GAAG,EAAE,cAAc,KAAK,OAAO,CAAC,MAAM,CAAC,CAAC,CAMhH"}

@@ -1,0 +1,24 @@
+{
+  "name": "betthecourt",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev:api": "tsx watch src/http/server.ts",
+    "dev:api:matchmaking": "tsx watch src/matchmaking/http/server.ts",
+    "dev:api:venue": "tsx watch src/venue/http/server.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.2",
+    "fastify": "^5.2.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  }
+}
