@@ -3,25 +3,25 @@
  * When the challenge becomes `scheduled`, emits `schedule_confirmed` to both parties.
  */
 export async function confirmScheduleFlow(deps, input) {
-    const before = await deps.challenges.getChallenge(input.challengeId);
+    const challengeBefore = await deps.challenges.getChallenge(input.challengeId);
     const view = await deps.scheduling.confirmSlot(input);
-    const after = await deps.challenges.getChallenge(input.challengeId);
-    if (before.state !== "scheduled" && after.state === "scheduled") {
+    const challengeAfter = await deps.challenges.getChallenge(input.challengeId);
+    if (challengeBefore.state !== "scheduled" && challengeAfter.state === "scheduled") {
         await deps.notifications.notify({
-            userId: after.creatorPartyId,
+            userId: challengeAfter.creatorPartyId,
             type: "schedule_confirmed",
             title: "Schedule confirmed",
             body: "The match time is confirmed.",
-            metadata: { challengeId: after.id, slot: after.scheduleProposal },
+            metadata: { challengeId: challengeAfter.id, slot: challengeAfter.scheduleProposal },
         });
         await deps.notifications.notify({
-            userId: after.opponentPartyId,
+            userId: challengeAfter.opponentPartyId,
             type: "schedule_confirmed",
             title: "Schedule confirmed",
             body: "The match time is confirmed.",
-            metadata: { challengeId: after.id, slot: after.scheduleProposal },
+            metadata: { challengeId: challengeAfter.id, slot: challengeAfter.scheduleProposal },
         });
     }
-    return { scheduleView: view, challenge: after };
+    return { scheduleView: view, challenge: challengeAfter };
 }
 //# sourceMappingURL=confirmScheduleFlow.js.map

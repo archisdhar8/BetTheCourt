@@ -51,6 +51,10 @@ export class ChallengeService {
     async getChallenge(id) {
         return this.load(id);
     }
+    async listChallenges() {
+        const list = await this.repo.listAll();
+        return list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    }
     async submitDraft(id, actor) {
         const ch = await this.load(id);
         assertNotTerminal(ch);

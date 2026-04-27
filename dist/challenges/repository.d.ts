@@ -5,12 +5,14 @@ import type { Challenge } from "./model.js";
 export interface ChallengeRepository {
     create(challenge: Challenge): Promise<void>;
     getById(id: string): Promise<Challenge | null>;
+    listAll(): Promise<Challenge[]>;
     save(challenge: Challenge): Promise<void>;
 }
 export declare class InMemoryChallengeRepository implements ChallengeRepository {
     private readonly store;
     create(challenge: Challenge): Promise<void>;
     getById(id: string): Promise<Challenge | null>;
+    listAll(): Promise<Challenge[]>;
     save(challenge: Challenge): Promise<void>;
     /** Test helper / admin tooling — not an HTTP contract. */
     clear(): void;

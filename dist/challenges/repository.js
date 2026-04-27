@@ -6,6 +6,9 @@ export class InMemoryChallengeRepository {
     async getById(id) {
         return this.store.get(id) ?? null;
     }
+    async listAll() {
+        return [...this.store.values()];
+    }
     async save(challenge) {
         if (!this.store.has(challenge.id)) {
             throw new Error(`Challenge ${challenge.id} not found for save`);

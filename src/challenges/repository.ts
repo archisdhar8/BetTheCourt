@@ -6,6 +6,7 @@ import type { Challenge } from "./model.js";
 export interface ChallengeRepository {
   create(challenge: Challenge): Promise<void>;
   getById(id: string): Promise<Challenge | null>;
+  listAll(): Promise<Challenge[]>;
   save(challenge: Challenge): Promise<void>;
 }
 
@@ -18,6 +19,10 @@ export class InMemoryChallengeRepository implements ChallengeRepository {
 
   async getById(id: string): Promise<Challenge | null> {
     return this.store.get(id) ?? null;
+  }
+
+  async listAll(): Promise<Challenge[]> {
+    return [...this.store.values()];
   }
 
   async save(challenge: Challenge): Promise<void> {

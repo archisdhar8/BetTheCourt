@@ -17,6 +17,7 @@ export declare class ChallengeService {
     private persist;
     createChallenge(input: CreateChallengeInput): Promise<Challenge>;
     getChallenge(id: string): Promise<Challenge>;
+    listChallenges(): Promise<Challenge[]>;
     submitDraft(id: string, actor: Actor): Promise<Challenge>;
     accept(id: string, actor: Actor): Promise<Challenge>;
     decline(id: string, actor: Actor): Promise<Challenge>;

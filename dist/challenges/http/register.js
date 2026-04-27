@@ -13,6 +13,14 @@ function domainErrorReply(reply, err) {
     throw err;
 }
 export function registerChallengeRoutes(app, challenges) {
+    app.get("/v1/challenges", async (_req, reply) => {
+        try {
+            return reply.send(await challenges.listChallenges());
+        }
+        catch (err) {
+            return domainErrorReply(reply, err);
+        }
+    });
     app.post("/v1/challenges", async (req, reply) => {
         const parsed = createChallengeBodySchema.safeParse(req.body);
         if (!parsed.success) {
