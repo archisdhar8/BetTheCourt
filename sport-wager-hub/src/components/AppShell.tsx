@@ -2,7 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 import {
   LayoutDashboard, Swords, MapPin, Trophy, Wallet, BellRing, ShieldAlert,
-  CheckCircle2, ClipboardCheck, Calendar, Users2, Zap,
+  CheckCircle2, ClipboardCheck, Calendar, Users2, Zap, LogOut,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useApp } from "@/lib/contexts";
@@ -26,7 +26,7 @@ const nav = [
 const sports: (Sport | "all")[] = ["all", "basketball", "tennis", "padel", "pool", "darts", "chess", "ping_pong"];
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { currentUser, users, setCurrentUserId, sportFilter, setSportFilter, unreadCount } = useApp();
+  const { currentUser, users, setCurrentUserId, sportFilter, setSportFilter, unreadCount, syncLocation, logout } = useApp();
   const loc = useLocation();
 
   return (
@@ -92,6 +92,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               ))}
             </select>
           </div>
+          <button
+            className="text-xs border border-border rounded-md px-2 py-1 hover:border-primary/50"
+            onClick={() => { void syncLocation(); }}
+          >
+            Sync location
+          </button>
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Sport</span>
@@ -114,6 +120,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
             )}
           </Link>
+          <button className="h-9 w-9 rounded-md border border-border flex items-center justify-center hover:border-primary/50" onClick={() => { void logout(); }}>
+            <LogOut className="h-4 w-4" />
+          </button>
         </header>
 
         <main className="flex-1 px-6 py-6 min-w-0">{children}</main>

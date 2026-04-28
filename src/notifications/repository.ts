@@ -19,12 +19,16 @@ export class InMemoryNotificationsRepository implements NotificationsRepository 
   }
 
   async listForUser(userId: string): Promise<InAppNotification[]> {
-    const list = this.rows.filter((n) => n.userId === userId);
-    return [...list].sort((a, b) => {
-      const t = b.createdAt.localeCompare(a.createdAt);
-      if (t !== 0) return t;
-      return b.id.localeCompare(a.id);
-    });
+    const indexed = this.rows
+      .map((n, idx) => ({ n, idx }))
+      .filter((x) => x.n.userId === userId);
+    return indexed
+      .sort((a, b) => {
+        const t = b.n.createdAt.localeCompare(a.n.createdAt);
+        if (t !== 0) return t;
+        return b.idx - a.idx;
+      })
+      .map((x) => x.n);
   }
 
   async findForUser(userId: string, notificationId: string): Promise<InAppNotification | null> {

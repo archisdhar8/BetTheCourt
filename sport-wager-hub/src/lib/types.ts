@@ -20,11 +20,14 @@ export type ChallengeState =
 
 export interface User {
   id: string;
+  email?: string;
   username: string;
   displayName: string;
   avatarUrl?: string;
   elo: number;
   homeVenueId?: string;
+  location?: { lat: number; lng: number; updatedAt: string };
+  locationPrivacy?: "hybrid_private" | "precise";
 }
 
 export interface Wallet {
@@ -162,6 +165,8 @@ export interface LeaderboardRow {
   userId: string;
   username: string;
   elo: number;
+  ratingType?: "elo" | "performance";
+  displayScore?: number;
   wins: number;
   losses: number;
   streak: number;

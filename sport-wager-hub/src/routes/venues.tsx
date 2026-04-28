@@ -70,6 +70,9 @@ function Venues() {
                   <div>
                     <CardTitle className="text-base flex items-center gap-2">
                       {v.venue.name}
+                      {list[0]?.venue.id === v.venue.id && (
+                        <span className="text-[10px] bg-accent/20 text-accent border border-accent/30 px-1.5 py-0.5 rounded uppercase tracking-wider">Midpoint pick</span>
+                      )}
                       {v.homeCourtFor && <span className="text-[10px] bg-primary/20 text-primary border border-primary/30 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1"><Home className="h-3 w-3" />Home</span>}
                     </CardTitle>
                     <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1"><MapPin className="h-3 w-3" />{v.venue.city}</div>

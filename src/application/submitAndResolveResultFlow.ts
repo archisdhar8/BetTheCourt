@@ -38,12 +38,12 @@ export async function confirmResultFlow(
   deps: ApplicationDeps,
   input: { challengeId: string; actor: Actor; note?: string; ackFingerprint?: string },
 ) {
-  const challengeBefore = await deps.challenges.getChallenge(input.challengeId);
+  const beforeState = (await deps.challenges.getChallenge(input.challengeId)).state;
   const view = await deps.results.confirmResult(input);
   const challengeAfter = await deps.challenges.getChallenge(input.challengeId);
 
   if (
-    challengeBefore.state !== "confirmed" &&
+    beforeState !== "confirmed" &&
     challengeAfter.state === "confirmed" &&
     challengeAfter.completedByPartyId
   ) {
@@ -66,11 +66,11 @@ export async function disputeResultFlow(
   deps: ApplicationDeps,
   input: { challengeId: string; actor: Actor; reason: string; counterPayload?: ResultPayload },
 ) {
-  const beforeChallenge = await deps.challenges.getChallenge(input.challengeId);
+  const beforeState = (await deps.challenges.getChallenge(input.challengeId)).state;
   const view = await deps.results.disputeResult(input);
   const afterChallenge = await deps.challenges.getChallenge(input.challengeId);
 
-  if (beforeChallenge.state === "completed" && afterChallenge.state === "disputed") {
+  if (beforeState === "completed" && afterChallenge.state === "disputed") {
     const meta = { challengeId: afterChallenge.id, reason: input.reason };
     await deps.notifications.notify({
       userId: afterChallenge.creatorPartyId,

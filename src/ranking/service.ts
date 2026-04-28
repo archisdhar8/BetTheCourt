@@ -29,6 +29,7 @@ async function loadOrInitRating(
     userId,
     sport,
     elo: DEFAULT_ELO,
+    performanceScore: 1000,
     wins: 0,
     losses: 0,
     matchesPlayed: 0,
@@ -62,6 +63,10 @@ function applyWinLossToRating(
   return {
     ...row,
     elo: newElo,
+    performanceScore:
+      outcome === "win"
+        ? row.performanceScore + 18 + Math.min(12, row.winStreak * 2)
+        : Math.max(600, row.performanceScore - 12),
     wins,
     losses,
     matchesPlayed,
@@ -91,6 +96,7 @@ export class RankingService {
   }
 
   async getLeaderboard(sport: string, window: LeaderboardWindow): Promise<LeaderboardEntry[]> {
+    const ratingType: "elo" | "performance" = sport === "chess" ? "elo" : "performance";
     const rows = await this.repo.listRatingsForSport(sport);
     const apps = await this.repo.listApplicationsForSport(sport);
 
@@ -113,6 +119,9 @@ export class RankingService {
         userId: r.userId,
         sport: r.sport,
         elo: r.elo,
+        performanceScore: r.performanceScore,
+        ratingType,
+        displayScore: ratingType === "elo" ? r.elo : r.performanceScore,
         wins: r.wins,
         losses: r.losses,
         matchesPlayed: r.matchesPlayed,
@@ -128,7 +137,10 @@ export class RankingService {
       if (window === "weekly") {
         if (b.windowWins !== a.windowWins) return b.windowWins - a.windowWins;
       }
-      if (b.elo !== a.elo) return b.elo - a.elo;
+      if (ratingType === "elo" && b.elo !== a.elo) return b.elo - a.elo;
+      if (ratingType === "performance" && b.performanceScore !== a.performanceScore) {
+        return b.performanceScore - a.performanceScore;
+      }
       if (b.wins !== a.wins) return b.wins - a.wins;
       return a.userId.localeCompare(b.userId);
     });
@@ -205,9 +217,9 @@ export class RankingService {
 
     const winnerEloBefore = wb;
     const loserEloBefore = lb;
-
-    winner = applyWinLossToRating(winner, "win", newWinnerElo, now);
-    loser = applyWinLossToRating(loser, "loss", newLoserElo, now);
+    const useElo = ch.sport === "chess";
+    winner = applyWinLossToRating(winner, "win", useElo ? newWinnerElo : winner.elo, now);
+    loser = applyWinLossToRating(loser, "loss", useElo ? newLoserElo : loser.elo, now);
 
     await this.repo.saveUserRating(winner);
     await this.repo.saveUserRating(loser);

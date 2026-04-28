@@ -163,6 +163,10 @@ export async function rankVenues(input: RankVenuesInput): Promise<VenueDiscovery
   }
 
   rows.sort((a, b) => {
+    const aMid = haversineKm(a.location, centroid);
+    const bMid = haversineKm(b.location, centroid);
+    const midDelta = aMid - bMid;
+    if (Math.abs(midDelta) > 0.25) return midDelta;
     const s = b.suitabilityScore - a.suitabilityScore;
     if (s !== 0) return s;
     const f = b.fairnessScore - a.fairnessScore;

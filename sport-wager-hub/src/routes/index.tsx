@@ -113,7 +113,7 @@ function Dashboard() {
                         <span className="font-mono text-xs text-muted-foreground w-5">#{row.rank}</span>
                         <span className="font-medium">{row.username}</span>
                       </span>
-                      <span className="text-numeric text-primary font-semibold">{row.elo}</span>
+                      <span className="text-numeric text-primary font-semibold">{Math.round(row.displayScore ?? row.elo)}</span>
                     </li>
                   ))}
                 </ol>

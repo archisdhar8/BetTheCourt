@@ -33,6 +33,8 @@ import {
 const ENV_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
 const BASE_URL = ENV_BASE_URL ? ENV_BASE_URL.replace(/\/$/, "") : undefined;
 export const API_MODE: "mock" | "live" = BASE_URL ? "live" : "mock";
+const AUTH_TOKEN_KEY = "wagr_auth_token";
+let authToken: string | null = typeof window !== "undefined" ? window.localStorage.getItem(AUTH_TOKEN_KEY) : null;
 
 const delay = (ms = 250) => new Promise((r) => setTimeout(r, ms + Math.random() * 200));
 const idem = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -59,7 +61,11 @@ type ApiError = { code?: string; error?: string; message?: string; details?: unk
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   if (!BASE_URL) throw new Error("VITE_API_BASE_URL is not set");
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+    headers: {
+      "content-type": "application/json",
+      ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
+      ...(init?.headers ?? {}),
+    },
     ...init,
   });
   if (!res.ok) {
@@ -74,6 +80,22 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
     throw { code, status: res.status, message, details: parsed?.details };
   }
   return res.json() as Promise<T>;
+}
+
+function setAuthToken(token: string | null) {
+  authToken = token;
+  if (typeof window === "undefined") return;
+  if (token) window.localStorage.setItem(AUTH_TOKEN_KEY, token);
+  else window.localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
+function userLocation(userId: string): { lat: number; lng: number } {
+  const u = store.users.find((x) => x.id === userId);
+  return u?.location ? { lat: u.location.lat, lng: u.location.lng } : { lat: 40.74, lng: -73.98 };
+}
+
+function midpoint(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  return { lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2 };
 }
 
 type BackendChallenge = {
@@ -238,14 +260,161 @@ function mapWallet(input: {
 
 // --- Public API ----------------------------------------------------
 export const api = {
+  async register(input: {
+    email: string;
+    username: string;
+    displayName: string;
+    password: string;
+  }): Promise<User> {
+    if (API_MODE === "live") {
+      const out = await http<{ token: string; user: any }>(`/v1/auth/register`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+      setAuthToken(out.token);
+      const mapped: User = {
+        id: out.user.id,
+        email: out.user.email,
+        username: out.user.username,
+        displayName: out.user.displayName,
+        elo: 1500,
+        homeVenueId: out.user.homeVenueId,
+        location: out.user.location,
+        locationPrivacy: out.user.locationPrivacy,
+      };
+      const i = store.users.findIndex((u) => u.id === mapped.id);
+      if (i >= 0) store.users[i] = mapped;
+      else store.users.push(mapped);
+      return mapped;
+    }
+    await delay();
+    return store.users[0]!;
+  },
+  async login(email: string, password: string): Promise<User> {
+    if (API_MODE === "live") {
+      const out = await http<{ token: string; user: any }>(`/v1/auth/login`, {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      setAuthToken(out.token);
+      const mapped: User = {
+        id: out.user.id,
+        email: out.user.email,
+        username: out.user.username,
+        displayName: out.user.displayName,
+        elo: store.users.find((u) => u.id === out.user.id)?.elo ?? 1500,
+        homeVenueId: out.user.homeVenueId,
+        location: out.user.location,
+        locationPrivacy: out.user.locationPrivacy,
+      };
+      const i = store.users.findIndex((u) => u.id === mapped.id);
+      if (i >= 0) store.users[i] = mapped;
+      else store.users.push(mapped);
+      return mapped;
+    }
+    await delay();
+    return store.users.find((u) => u.email === email) ?? store.users[0]!;
+  },
+  async me(): Promise<User | null> {
+    if (API_MODE === "live") {
+      try {
+        const out = await http<{ user: any }>(`/v1/auth/me`);
+        const known = store.users.find((u) => u.id === out.user.id);
+        return {
+          id: out.user.id,
+          email: out.user.email,
+          username: out.user.username,
+          displayName: out.user.displayName,
+          elo: known?.elo ?? 1500,
+          homeVenueId: out.user.homeVenueId,
+          location: out.user.location,
+          locationPrivacy: out.user.locationPrivacy,
+        };
+      } catch (e: any) {
+        if (e?.status === 401) return null;
+        throw e;
+      }
+    }
+    await delay(20);
+    return store.users[0] ?? null;
+  },
+  async logout(): Promise<void> {
+    if (API_MODE === "live") {
+      await http(`/v1/auth/logout`, { method: "POST", body: JSON.stringify({}) });
+      setAuthToken(null);
+      return;
+    }
+    await delay(20);
+  },
   // Users (backend has no dedicated users endpoint yet; keep deterministic fixture source)
   async listUsers(): Promise<User[]> {
+    if (API_MODE === "live") {
+      const out = await http<{ users: any[] }>(`/v1/users`);
+      return out.users.map((u) => ({
+        id: u.id,
+        email: u.email,
+        username: u.username,
+        displayName: u.displayName,
+        elo: store.users.find((x) => x.id === u.id)?.elo ?? 1500,
+        homeVenueId: u.homeVenueId,
+        location: u.location,
+        locationPrivacy: u.locationPrivacy,
+      }));
+    }
     await delay(20);
     return store.users;
   },
   async getUser(id: string): Promise<User | undefined> {
+    if (API_MODE === "live") {
+      try {
+        const out = await http<{ user: any }>(`/v1/users/${id}/profile`);
+        return {
+          id: out.user.id,
+          email: out.user.email,
+          username: out.user.username,
+          displayName: out.user.displayName,
+          elo: store.users.find((x) => x.id === id)?.elo ?? 1500,
+          homeVenueId: out.user.homeVenueId,
+          location: out.user.location,
+          locationPrivacy: out.user.locationPrivacy,
+        };
+      } catch (e: any) {
+        if (e?.status === 404) return undefined;
+        throw e;
+      }
+    }
     await delay(20);
     return store.users.find((u) => u.id === id);
+  },
+  async updateMyLocation(
+    userId: string,
+    input: { lat: number; lng: number; locationPrivacy?: "hybrid_private" | "precise" },
+  ): Promise<User> {
+    if (API_MODE === "live") {
+      const out = await http<{ user: any }>(`/v1/users/${userId}/location`, {
+        method: "PATCH",
+        body: JSON.stringify(input),
+      });
+      const mapped: User = {
+        id: out.user.id,
+        email: out.user.email,
+        username: out.user.username,
+        displayName: out.user.displayName,
+        elo: store.users.find((x) => x.id === userId)?.elo ?? 1500,
+        homeVenueId: out.user.homeVenueId,
+        location: out.user.location,
+        locationPrivacy: out.user.locationPrivacy,
+      };
+      const i = store.users.findIndex((u) => u.id === mapped.id);
+      if (i >= 0) store.users[i] = mapped;
+      else store.users.push(mapped);
+      return mapped;
+    }
+    await delay(20);
+    const user = store.users.find((u) => u.id === userId) ?? store.users[0]!;
+    user.location = { lat: input.lat, lng: input.lng, updatedAt: new Date().toISOString() };
+    user.locationPrivacy = input.locationPrivacy ?? "hybrid_private";
+    return user;
   },
 
   // Wallet
@@ -504,13 +673,14 @@ export const api = {
     if (API_MODE === "live") {
       const seeker = store.users.find((u) => u.id === input.userId);
       if (!seeker) return [];
+      const seekerLoc = userLocation(seeker.id);
       const candidates = store.users
         .filter((u) => u.id !== input.userId)
         .map((u) => ({
           party: "user",
           userId: u.id,
           sport: input.sport,
-          location: { lat: 40.74, lng: -73.98 },
+          location: userLocation(u.id),
           skillRating: u.elo,
           wins: 10,
           losses: 5,
@@ -544,7 +714,7 @@ export const api = {
             userId: seeker.id,
             pastOpponentIds: [],
             sport: input.sport,
-            location: { lat: 40.74, lng: -73.98 },
+            location: seekerLoc,
             maxTravelDistanceKm: input.maxKm ?? 15,
             skillRating: seeker.elo,
             wins: 10,
@@ -597,6 +767,8 @@ export const api = {
   // Venues
   async rankVenues(input: { participants: string[]; sport: Sport }): Promise<VenueRanking[]> {
     if (API_MODE === "live") {
+      const [a, b] = input.participants.map((p) => userLocation(p));
+      const center = a && b ? midpoint(a, b) : userLocation(input.participants[0] ?? "u_1");
       const out = await http<{
         venues?: Array<{
           venueId: string;
@@ -624,7 +796,7 @@ export const api = {
           sport: input.sport,
           participants: input.participants.map((p) => ({
             partyId: p,
-            location: { lat: 40.74, lng: -73.98 },
+            location: userLocation(p),
             maxTravelDistanceKm: 20,
             homeVenueIds: store.users.filter((u) => u.id === p).map((u) => u.homeVenueId).filter(Boolean),
           })),
@@ -670,6 +842,11 @@ export const api = {
           homeCourtFor: r.homeCourtForPartyId,
           rationale: [r.explanation ?? "No explanation available"],
         };
+      }).sort((x, y) => {
+        const dx = Math.hypot(x.venue.lat - center.lat, x.venue.lng - center.lng);
+        const dy = Math.hypot(y.venue.lat - center.lat, y.venue.lng - center.lng);
+        if (Math.abs(dx - dy) > 0.01) return dx - dy;
+        return y.suitabilityScore - x.suitabilityScore;
       });
     }
     await delay();
@@ -981,6 +1158,8 @@ export const api = {
         userId: e.userId,
         username: store.users.find((u) => u.id === e.userId)?.displayName ?? e.userId,
         elo: e.elo,
+        ratingType: e.ratingType ?? (_sport === "chess" ? "elo" : "performance"),
+        displayScore: e.displayScore ?? e.elo,
         wins: e.wins,
         losses: e.losses,
         streak: e.winStreak > 0 ? e.winStreak : -Math.max(e.lossStreak ?? 0, 0),

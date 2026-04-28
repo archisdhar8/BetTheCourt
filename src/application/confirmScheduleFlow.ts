@@ -5,11 +5,11 @@ import type { ApplicationDeps, ConfirmScheduleFlowInput } from "./model.js";
  * When the challenge becomes `scheduled`, emits `schedule_confirmed` to both parties.
  */
 export async function confirmScheduleFlow(deps: ApplicationDeps, input: ConfirmScheduleFlowInput) {
-  const challengeBefore = await deps.challenges.getChallenge(input.challengeId);
+  const beforeState = (await deps.challenges.getChallenge(input.challengeId)).state;
   const view = await deps.scheduling.confirmSlot(input);
   const challengeAfter = await deps.challenges.getChallenge(input.challengeId);
 
-  if (challengeBefore.state !== "scheduled" && challengeAfter.state === "scheduled") {
+  if (beforeState !== "scheduled" && challengeAfter.state === "scheduled") {
     await deps.notifications.notify({
       userId: challengeAfter.creatorPartyId,
       type: "schedule_confirmed",

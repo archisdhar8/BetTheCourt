@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { AppProvider } from "@/lib/contexts";
+import { useApp } from "@/lib/contexts";
 import { AppShell } from "@/components/AppShell";
 
 function NotFoundComponent() {
@@ -45,7 +46,23 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   return (
     <AppProvider>
-      <AppShell><Outlet /></AppShell>
+      <RootGate />
     </AppProvider>
   );
+}
+
+function RootGate() {
+  const { isAuthReady, currentUser } = useApp();
+  const path = typeof window !== "undefined" ? window.location.pathname : "/";
+  if (!isAuthReady) return <div className="min-h-screen bg-background" />;
+  if (!currentUser && path !== "/login") {
+    if (typeof window !== "undefined") window.location.replace("/login");
+    return null;
+  }
+  if (currentUser && path === "/login") {
+    if (typeof window !== "undefined") window.location.replace("/");
+    return null;
+  }
+  if (path === "/login") return <Outlet />;
+  return <AppShell><Outlet /></AppShell>;
 }

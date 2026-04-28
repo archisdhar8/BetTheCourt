@@ -7,6 +7,7 @@ export type UserSportRating = {
   userId: string;
   sport: string;
   elo: number;
+  performanceScore: number;
   wins: number;
   losses: number;
   matchesPlayed: number;
@@ -38,6 +39,9 @@ export type LeaderboardEntry = {
   userId: string;
   sport: string;
   elo: number;
+  performanceScore: number;
+  ratingType: "elo" | "performance";
+  displayScore: number;
   wins: number;
   losses: number;
   matchesPlayed: number;

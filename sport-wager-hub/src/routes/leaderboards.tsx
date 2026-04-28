@@ -21,7 +21,7 @@ function Leaderboards() {
 
   return (
     <>
-      <PageHeader title="Leaderboards" subtitle="Compete on ELO, streaks, and weekly wins" />
+      <PageHeader title="Leaderboards" subtitle="Compete on sport-specific ratings, streaks, and weekly wins" />
 
       <div className="flex flex-wrap gap-3 mb-4 items-center">
         <select value={sport} onChange={(e) => setSport(e.target.value as Sport | "all")} className="bg-input border border-border rounded-md px-3 py-2 text-sm capitalize">
@@ -43,7 +43,7 @@ function Leaderboards() {
                 <tr>
                   <th className="text-left px-4 py-3">Rank</th>
                   <th className="text-left px-4 py-3">Player</th>
-                  <th className="text-right px-4 py-3">ELO</th>
+                  <th className="text-right px-4 py-3">Score</th>
                   <th className="text-right px-4 py-3">W</th>
                   <th className="text-right px-4 py-3">L</th>
                   <th className="text-right px-4 py-3">Streak</th>
@@ -61,7 +61,7 @@ function Leaderboards() {
                       }`}>{r.rank}</span>
                     </td>
                     <td className="px-4 py-3 font-medium">{r.username}</td>
-                    <td className="px-4 py-3 text-right text-numeric font-bold text-primary">{r.elo}</td>
+                    <td className="px-4 py-3 text-right text-numeric font-bold text-primary">{Math.round(r.displayScore ?? r.elo)}</td>
                     <td className="px-4 py-3 text-right text-numeric text-success">{r.wins}</td>
                     <td className="px-4 py-3 text-right text-numeric text-muted-foreground">{r.losses}</td>
                     <td className="px-4 py-3 text-right">

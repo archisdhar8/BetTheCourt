@@ -78,9 +78,9 @@ describe("RankingService", () => {
     ranking = new RankingService(rankingRepo, challenges, fraud);
   });
 
-  async function seedConfirmedWithWinner(winner: string) {
+  async function seedConfirmedWithWinner(winner: string, sport = "chess") {
     const ch = await challenges.createChallenge({
-      sport: "tennis",
+      sport,
       mode: "1v1",
       creatorPartyId: creatorId,
       opponentPartyId: opponentId,
@@ -94,7 +94,7 @@ describe("RankingService", () => {
   }
 
   it("first match: symmetric ELO from defaults and increments stats", async () => {
-    const id = await seedConfirmedWithWinner(creatorId);
+    const id = await seedConfirmedWithWinner(creatorId, "chess");
     const out = await ranking.applyRankingFromConfirmedChallenge(id);
     expect(out.applied).toBe(true);
     expect(out.ratings.winner.elo).toBe(1516);
@@ -104,7 +104,7 @@ describe("RankingService", () => {
     expect(out.ratings.winner.winStreak).toBe(1);
     expect(out.ratings.loser.lossStreak).toBe(1);
 
-    const weekly = await ranking.getLeaderboard("tennis", "weekly");
+    const weekly = await ranking.getLeaderboard("chess", "weekly");
     const creatorRow = weekly.find((e) => e.userId === creatorId);
     expect(creatorRow?.windowWins).toBeGreaterThanOrEqual(1);
   });
@@ -113,8 +113,9 @@ describe("RankingService", () => {
     const now = new Date().toISOString();
     await rankingRepo.saveUserRating({
       userId: creatorId,
-      sport: "tennis",
+      sport: "chess",
       elo: 2200,
+      performanceScore: 1400,
       wins: 50,
       losses: 10,
       matchesPlayed: 60,
@@ -125,8 +126,9 @@ describe("RankingService", () => {
     });
     await rankingRepo.saveUserRating({
       userId: opponentId,
-      sport: "tennis",
+      sport: "chess",
       elo: 1400,
+      performanceScore: 900,
       wins: 10,
       losses: 40,
       matchesPlayed: 50,
@@ -135,7 +137,7 @@ describe("RankingService", () => {
       bestWinStreak: 3,
       updatedAt: now,
     });
-    const id = await seedConfirmedWithWinner(opponentId);
+    const id = await seedConfirmedWithWinner(opponentId, "chess");
     const out = await ranking.applyRankingFromConfirmedChallenge(id);
     const { newRa, newRb } = computeEloUpdate(1400, 2200, 1);
     expect(out.ratings.winner.elo).toBe(newRa);
@@ -144,7 +146,7 @@ describe("RankingService", () => {
   });
 
   it("repeat apply is idempotent", async () => {
-    const id = await seedConfirmedWithWinner(creatorId);
+    const id = await seedConfirmedWithWinner(creatorId, "chess");
     const a = await ranking.applyRankingFromConfirmedChallenge(id);
     const b = await ranking.applyRankingFromConfirmedChallenge(id);
     expect(a.applied).toBe(true);
@@ -153,7 +155,7 @@ describe("RankingService", () => {
   });
 
   it("rejects disputed challenge", async () => {
-    const id = await seedConfirmedWithWinner(creatorId);
+    const id = await seedConfirmedWithWinner(creatorId, "chess");
     const ch = await chRepo.getById(id);
     expect(ch).not.toBeNull();
     await chRepo.save({ ...ch!, state: "disputed" });
@@ -163,7 +165,7 @@ describe("RankingService", () => {
   });
 
   it("rejects fraud-blocked clearance", async () => {
-    const id = await seedConfirmedWithWinner(creatorId);
+    const id = await seedConfirmedWithWinner(creatorId, "chess");
     await fraudRepo.appendEvaluation(id, {
       challengeId: id,
       evaluatedAt: new Date().toISOString(),
@@ -181,22 +183,23 @@ describe("RankingService", () => {
   });
 
   it("streak updates across two matches", async () => {
-    const id1 = await seedConfirmedWithWinner(creatorId);
+    const id1 = await seedConfirmedWithWinner(creatorId, "chess");
     await ranking.applyRankingFromConfirmedChallenge(id1);
-    const id2 = await seedConfirmedWithWinner(creatorId);
+    const id2 = await seedConfirmedWithWinner(creatorId, "chess");
     await ranking.applyRankingFromConfirmedChallenge(id2);
-    const view = await ranking.getUserRankingView(creatorId, "tennis");
+    const view = await ranking.getUserRankingView(creatorId, "chess");
     expect(view.rating.winStreak).toBe(2);
     expect(view.rating.bestWinStreak).toBe(2);
     expect(view.rating.wins).toBe(2);
   });
 
-  it("leaderboard all_time orders by ELO descending", async () => {
+  it("leaderboard all_time orders by ELO descending for chess", async () => {
     const t = new Date().toISOString();
     await rankingRepo.saveUserRating({
       userId: "u_low",
-      sport: "golf",
+      sport: "chess",
       elo: 1400,
+      performanceScore: 990,
       wins: 1,
       losses: 0,
       matchesPlayed: 1,
@@ -207,8 +210,9 @@ describe("RankingService", () => {
     });
     await rankingRepo.saveUserRating({
       userId: "u_high",
-      sport: "golf",
+      sport: "chess",
       elo: 1650,
+      performanceScore: 1200,
       wins: 2,
       losses: 0,
       matchesPlayed: 2,
@@ -217,10 +221,20 @@ describe("RankingService", () => {
       bestWinStreak: 2,
       updatedAt: t,
     });
-    const board = await ranking.getLeaderboard("golf", "all_time");
+    const board = await ranking.getLeaderboard("chess", "all_time");
     expect(board[0]!.userId).toBe("u_high");
     expect(board[1]!.userId).toBe("u_low");
     expect(board[0]!.rank).toBe(1);
+  });
+
+  it("non-chess sports rank by performance score", async () => {
+    const id = await seedConfirmedWithWinner(creatorId, "tennis");
+    const out = await ranking.applyRankingFromConfirmedChallenge(id);
+    expect(out.ratings.winner.elo).toBe(1500);
+    expect(out.ratings.winner.performanceScore).toBeGreaterThan(1000);
+    const board = await ranking.getLeaderboard("tennis", "all_time");
+    expect(board[0]!.ratingType).toBe("performance");
+    expect(board[0]!.displayScore).toBe(board[0]!.performanceScore);
   });
 
   it("rejects team mode challenges", async () => {

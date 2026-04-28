@@ -29,6 +29,12 @@ import { registerRankingRoutes } from "../ranking/http/register.js";
 import { InMemoryNotificationsRepository } from "../notifications/repository.js";
 import { NotificationService } from "../notifications/service.js";
 import { registerNotificationRoutes } from "../notifications/http/register.js";
+import { InMemoryUsersRepository } from "../users/repository.js";
+import { UsersService } from "../users/service.js";
+import { registerUserRoutes } from "../users/http/register.js";
+import { InMemoryAuthRepository } from "../auth/repository.js";
+import { AuthService } from "../auth/service.js";
+import { registerAuthRoutes } from "../auth/http/register.js";
 
 export function buildApiServer() {
   const app = Fastify({ logger: true });
@@ -48,9 +54,15 @@ export function buildApiServer() {
       "fraud",
       "ranking",
       "notifications",
+      "auth",
+      "users",
     ],
   }));
 
+  const usersRepo = new InMemoryUsersRepository(UsersService.defaultSeed());
+  const users = new UsersService(usersRepo);
+  const authRepo = new InMemoryAuthRepository();
+  const auth = new AuthService(authRepo, users);
   const challengeRepo = new InMemoryChallengeRepository();
   const challenges = new ChallengeService(challengeRepo);
   const resultsRepo = new InMemoryResultsRepository();
@@ -79,6 +91,8 @@ export function buildApiServer() {
   registerRankingRoutes(app, ranking);
   registerNotificationRoutes(app, notifications);
   registerWalletRoutes(app, wallet);
+  registerUserRoutes(app, users);
+  registerAuthRoutes(app, auth);
 
   return app;
 }

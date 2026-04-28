@@ -14,6 +14,7 @@ import { Route as VenuesRouteImport } from './routes/venues'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as MatchmakingRouteImport } from './routes/matchmaking'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as LeaderboardsRouteImport } from './routes/leaderboards'
 import { Route as FraudRouteImport } from './routes/fraud'
 import { Route as CheckinRouteImport } from './routes/checkin'
@@ -45,6 +46,11 @@ const NotificationsRoute = NotificationsRouteImport.update({
 const MatchmakingRoute = MatchmakingRouteImport.update({
   id: '/matchmaking',
   path: '/matchmaking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LeaderboardsRoute = LeaderboardsRouteImport.update({
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/checkin': typeof CheckinRoute
   '/fraud': typeof FraudRoute
   '/leaderboards': typeof LeaderboardsRoute
+  '/login': typeof LoginRoute
   '/matchmaking': typeof MatchmakingRoute
   '/notifications': typeof NotificationsRoute
   '/results': typeof ResultsRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/checkin': typeof CheckinRoute
   '/fraud': typeof FraudRoute
   '/leaderboards': typeof LeaderboardsRoute
+  '/login': typeof LoginRoute
   '/matchmaking': typeof MatchmakingRoute
   '/notifications': typeof NotificationsRoute
   '/results': typeof ResultsRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/checkin': typeof CheckinRoute
   '/fraud': typeof FraudRoute
   '/leaderboards': typeof LeaderboardsRoute
+  '/login': typeof LoginRoute
   '/matchmaking': typeof MatchmakingRoute
   '/notifications': typeof NotificationsRoute
   '/results': typeof ResultsRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/checkin'
     | '/fraud'
     | '/leaderboards'
+    | '/login'
     | '/matchmaking'
     | '/notifications'
     | '/results'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/checkin'
     | '/fraud'
     | '/leaderboards'
+    | '/login'
     | '/matchmaking'
     | '/notifications'
     | '/results'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/checkin'
     | '/fraud'
     | '/leaderboards'
+    | '/login'
     | '/matchmaking'
     | '/notifications'
     | '/results'
@@ -176,6 +188,7 @@ export interface RootRouteChildren {
   CheckinRoute: typeof CheckinRoute
   FraudRoute: typeof FraudRoute
   LeaderboardsRoute: typeof LeaderboardsRoute
+  LoginRoute: typeof LoginRoute
   MatchmakingRoute: typeof MatchmakingRoute
   NotificationsRoute: typeof NotificationsRoute
   ResultsRoute: typeof ResultsRoute
@@ -221,6 +234,13 @@ declare module '@tanstack/react-router' {
       path: '/matchmaking'
       fullPath: '/matchmaking'
       preLoaderRoute: typeof MatchmakingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/leaderboards': {
@@ -280,6 +300,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckinRoute: CheckinRoute,
   FraudRoute: FraudRoute,
   LeaderboardsRoute: LeaderboardsRoute,
+  LoginRoute: LoginRoute,
   MatchmakingRoute: MatchmakingRoute,
   NotificationsRoute: NotificationsRoute,
   ResultsRoute: ResultsRoute,
